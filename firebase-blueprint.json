@@ -1,0 +1,27 @@
+{
+  "entities": {
+    "Post": {
+      "title": "Blog Post",
+      "description": "A blog post with SEO fields",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Post title" },
+        "slug": { "type": "string", "description": "URL slug" },
+        "content": { "type": "string", "description": "Markdown content" },
+        "metaTitle": { "type": "string" },
+        "metaDescription": { "type": "string" },
+        "focusKeyword": { "type": "string" },
+        "category": { "type": "string" },
+        "publishedAt": { "type": "number" },
+        "authorId": { "type": "string" }
+      },
+      "required": ["title", "slug", "content", "authorId"]
+    }
+  },
+  "firestore": {
+    "/posts/{postId}": {
+      "schema": { "$ref": "#/entities/Post" },
+      "description": "Blog posts collection"
+    }
+  }
+}

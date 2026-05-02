@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'mandaraoilmill@gmail.com' && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    function isValidPost(data) {
+       return data.keys().hasAll(['title', 'slug', 'content', 'authorId']) &&
+              data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+              data.slug is string && data.slug.size() > 0 && data.slug.size() <= 200 &&
+              data.content is string && data.content.size() <= 100000 &&
+              data.authorId is string && data.authorId == request.auth.uid &&
+              data.get('metaTitle', '') is string &&
+              data.get('metaDescription', '') is string &&
+              data.get('focusKeyword', '') is string &&
+              data.get('category', '') is string &&
+              data.get('publishedAt', 0) is number;
+    }
+
+    match /posts/{postId} {
+      // Public can read list of posts and individual posts
+      allow read: if true;
+      allow create: if isAdmin() && isValidId(postId) && isValidPost(incoming()) && incoming().keys().size() <= 12;
+      allow update: if (isAdmin() && isValidPost(incoming()) && incoming().authorId == existing().authorId && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'slug', 'content', 'metaTitle', 'metaDescription', 'focusKeyword', 'category', 'publishedAt'])
+      ));
+      allow delete: if isAdmin() && existing().authorId == request.auth.uid;
+    }
+  }
+}
